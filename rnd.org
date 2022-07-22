@@ -1,0 +1,158 @@
+* Research and Development
+
+** Initial Questions
+
+We wish to answer two key questions:
+
+1. Can rewards addresses be script addresses? (i.e. can we control the spending of UTxOs at a rewards address with Plutus scripts?)
+   - This could be used to implement some fee for delegators delegating on behalf of someone else.
+   - E.g. Bob can claim 3% of staking rewards for staking on behalf of Alice. Alice can claim the rest of the rewards.
+   - (Value: 100, Datum: (Bob Unclaimed, Alice Unclaimed))
+   - Bob claims 3%
+   - (Value: 97, Datum: (Bob Claimed, Alice Unclaimed))
+   - Bob can no longer claim
+   - Alice claims rest
+   - (Value: 0, Datum: (Bob Claimed, Alice Claimed))
+   - But this wouldn't work, as rewards increase over time. 3% of each UTxO?
+     - i.e. validator checks that the claiming transaction only consumes 3% of each UTxO being consumed, sends the rest back.
+2. Can we control delegation righs with Plutus scripts?
+   - How does delegation work?
+
+*** Types of Addresses
+https://docs.cardano.org/core-concepts/cardano-addresses
+
+**** Base Address
+
+- Directly specifies staking key that controls stake for that address.
+- Do not require staking key to be registered in advance.
+- Still, stake rights can only be exercised by registering the stake key and delegating to a stake pool.
+
+**** Pointer address
+
+- Indirectly specifies the staking key that controls the stake for that address.
+- References stake key by a stake key pointer: location on the blockchain of the stake key registration certificate.
+
+**** Enterprise addresses
+
+- Enterprise addresses carry no stake rights.
+- Special use-case.
+
+**** Reward account addresses
+
+- Hash of the public staking key of the address.
+- Account-style accounting is used, not UTxO-style.
+- Funds cannot be received via transactions. Balance is increased by distribution of rewards.
+- Each registered stake key has one, and exactly one, reward account address.
+
+*** Withdrawing Rewards
+https://cardano-foundation.gitbook.io/stake-pool-course/stake-pool-guide/stake-pool/withdraw-rewards
+
+- Can query reward balance using stake address.
+
+- Withdrawal occurs via the CLI like this:
+
+#+BEGIN_SRC sh
+cardano-cli shelley transaction build raw \
+--tx-in a82f8d2a85cde39118a894306ad7a85ba40af221406064a56bdd9b3c61153527#1 # Pay transaction fees with this
+--tx-out $(cat payment.addr)+0 # Where we send rewards
+--withdrawal $(cat stake.addr)+550000000 # Withdraw X rewards from this stake address.
+--ttl 0
+--fee 0
+--out-file withdraw_rewards.raw
+#+END_SRC
+
+#+BEGIN_SRC sh
+cardano-cli shelley transaction sign \
+--testnet-magic 1097911063 \
+--tx-body-file withdraw_rewards.raw  \
+--signing-key-file payment.skey \
+# Sign with key to pay Tx fees
+--signing-key-file stake.skey \
+# Sign with stake private key, to permit withdrawal of funds.
+--out-file withdraw_rewards.signed
+#+END_SRC
+
+The above is an example of a typical signature-based approval for spending funds at an address.
+
+So, the question is, can stake address be script addresses? If so, perhaps we could use Plutus scripts to control withdrawal of rewards, instead of the stake private key/signature-based approach.
+
+*** Definition of StakeCredential
+
+- If we look inside ~cardano-api~, we can see that the definition of ~StakeCredential~ includes a case where the ~StakeCredential~ is created from a script hash:
+
+Cardano.Api.Address.hs:
+
+#+BEGIN_SRC haskell
+data StakeCredential
+       = StakeCredentialByKey    (Hash StakeKey)
+       | StakeCredentialByScript  ScriptHash
+  deriving (Eq, Ord, Show)
+#+END_SRC
+
+This is promising. The ~StakeAddress~ can be derived from such a ~StakeCredential~, hence we could make a "stake script address".
+
+*** Further Supporting Research
+
+https://github.com/input-output-hk/cardano-node/blob/1.35.1/doc/reference/simple-scripts.md
+
+The above resource makes the following statements:
+
+- In terms of a limited set of observations, there is no difference between script language.
+  - That is, if a core feature supported the simple script language (mult-signature addresses), it also supports Plutus scripts.
+- "Addresses specify authorisation conditions that must be met for the address to be used".
+  - A *Payment Address*, specifies the conditions required for funds to be withdrawn.
+  - A *Stake Address*, specifies the conditions required for:
+    - delegating
+    - rewards withdrawal
+- An address may specify one of the following conditions:
+  - Use a single private key.
+  - Successfully evaluate a script.
+- We are most familiar with the private key option, using a private key to sign a transaction, thus authorising:
+  - *Payment Address*: the withdrawal of funds from that address
+  - *Stake Address*: the delegation of funds for/withdrawal of funds from that address.
+- But an address can instead require that a script be evaluated successfully.
+  - Shelley era: simple script language (multi-signature)
+  - Allegra era: simple script language + timelocks
+  - Alonzo era: Plutus core
+
+- When we use a payment or stake address in a transaction, we must provide the information required to prove that the authorisation conditions specified by that address have been met.
+  - This information is known as a *transaction witness*.
+  - The *transaction witness* witnesses the validity of the transaction using that address.
+- The addresses contain a *credential* which is information sufficient to check that a *transaction witness* is satisfactory.
+
+- There are two types of credentials:
+  - *Key credential*: the hash of the verification (public) key, which has a corresponding signing (private) key.
+    - The *transaction witness* for a *key credential* is the verification key and signature of the transaction body hash, created using the corresponding signing key.
+    - The signature is verified, proving ownership of the corresponding signing key.
+  - *Script credential*: the hash of the script.
+    - The *transaction witness* for a *script credential* is the script itself.
+      - For the simple script language, there is no additional inputs.
+      - For the Plutus language, the datum and redeemer is required.
+
+***** In Summary
+
+The following address types exist:
+
+| Address Type | Allows                  |
+|--------------+-------------------------|
+| Payment      | - Spending of funds     |
+| Stake        | - Delegation            |
+|              | - Withdrawal of rewards |
+
+The addresses may be made up of one of the following credentials:
+
+| Credential Type   | Consists of                  | Witnessed by                                     |
+|-------------------+------------------------------+--------------------------------------------------|
+| Key credential    | Hash of the verification key | (verification key, signature of the transaction) |
+| Script credential | Hash of the script           | Simple: script                                   |
+|                   |                              | Plutus: (script, datum, redeemer)                |
+
+*** Conclusion
+
+From the last section alone I believe we can conclude the answers to the two key questions:
+  1. Yes, we can control the withdrawal of rewards using a Plutus script.
+  2. Yes, we can control delegation rights using a Plutus script.
+
+However, there may be a slight complication. It appears that a given *Stake Address* may only have one script controlling both it's delegation rights, and it's fund withdrawal.
+
+This may not be a big deal, perhaps we can write a single script, which can do different things depending on if the transaction is trying to delegate, or trying to withdraw funds. This will form our next topic of research.
