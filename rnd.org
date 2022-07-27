@@ -153,6 +153,22 @@ From the last section alone I believe we can conclude the answers to the two key
   1. Yes, we can control the withdrawal of rewards using a Plutus script.
   2. Yes, we can control delegation rights using a Plutus script.
 
-However, there may be a slight complication. It appears that a given *Stake Address* may only have one script controlling both it's delegation rights, and it's fund withdrawal.
+However, there may be a slight complication. It appears that a given *Stake Address* may only have one script controlling both:
+  - it's delegation rights, and
+  - it's fund withdrawal.
 
 This may not be a big deal, perhaps we can write a single script, which can do different things depending on if the transaction is trying to delegate, or trying to withdraw funds. This will form our next topic of research.
+
+*** Proof
+
+** Distinguishing between Delegation and Withdrawal
+
+1. Can we separately control delegation and withdrawal of rewards from a stake address?
+
+The following code shows an example of using a Plutus script to control delegation and withdrawal of rewards:
+
+https://github.com/input-output-hk/plutus-apps/blob/4792047f9c9d31b197efa4562de8648e07557fb7/plutus-example/test/Test/PlutusExample/Direct/CertifyingAndWithdrawingPlutus.hs
+
+*** Script Context
+
+I think the key here will be the script context, and particularly the script purpose.
