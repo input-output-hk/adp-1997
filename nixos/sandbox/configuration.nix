@@ -23,6 +23,7 @@ in
 
   environment.interactiveShellInit = ''
     export CARDANO_NODE_SRC=${inputs.cardano-node.sourceInfo}
+    export CARDANO_NODE_SOCKET_PATH=/var/lib/cardano-node/state/node-bft1/node.sock
   '';
 
   # For flakes
