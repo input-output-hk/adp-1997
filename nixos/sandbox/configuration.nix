@@ -2,6 +2,7 @@
 
 let
   cardanoNodePackages = inputs.cardano-node.packages."${pkgs.system}";
+  plutusProgs = inputs.self.packages."${pkgs.system}".always-succeed;
 in
 {
   imports = [
@@ -19,6 +20,7 @@ in
     pkgs.tree
     pkgs.jq
     (pkgs.writeShellScriptBin "start-cluster" (builtins.readFile ../../script.sh))
+    plutusProgs
   ];
 
   environment.interactiveShellInit = ''
@@ -28,7 +30,7 @@ in
 
   # For flakes
   nix = {
-    package = pkgs.nix_2_7;
+    # package = pkgs.nix_2_7;
     extraOptions = ''
       builders = @/etc/nix/machines
       builders-use-substitutes = true

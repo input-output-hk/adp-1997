@@ -3276,11 +3276,11 @@
     "hackage_18": {
       "flake": false,
       "locked": {
-        "lastModified": 1658711865,
-        "narHash": "sha256-Bkm7dEd7EKK8KO115g4Yko1f/i2ZLrPuauqiSJ73zIs=",
+        "lastModified": 1658798050,
+        "narHash": "sha256-uTYD550cWzlPV57dVIoiFnB0bzbQwDtdNbVAVE4IHxM=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "6af4d804e6e7c7f57324bbf386a76a5d1e3a8799",
+        "rev": "5f2b520aa06a98342a3b87cda54623e8938b6d5d",
         "type": "github"
       },
       "original": {
@@ -3841,11 +3841,11 @@
         "stackage": "stackage_19"
       },
       "locked": {
-        "lastModified": 1658712307,
-        "narHash": "sha256-zl53JEBPXhZ/Dn8rPX5kpOaXXH4zN1Cc1Jo8HVMdU6s=",
+        "lastModified": 1658869813,
+        "narHash": "sha256-AN5Ajzz/S+3Xc2TAtR6qz+AnXt8PWgA/lUbemkBwlD4=",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "b25a25f40c15c3faffcec633a74c48cee2fbbaf2",
+        "rev": "e3397e0ace4aeadefe941241bd5b7bfefad850a9",
         "type": "github"
       },
       "original": {
@@ -4811,6 +4811,26 @@
         "owner": "input-output-hk",
         "repo": "iohk-nix",
         "rev": "1e51437aac8a0e49663cb21e781f34163c81ebfb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "iohk-nix",
+        "type": "github"
+      }
+    },
+    "iohkNix_19": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1658222743,
+        "narHash": "sha256-yFH01psqx30y5Ws4dBElLkxYpIxxqZx4G+jCVhsXpnA=",
+        "owner": "input-output-hk",
+        "repo": "iohk-nix",
+        "rev": "9a604d01bd4420ab7f396f14d1947fbe2ce7db8b",
         "type": "github"
       },
       "original": {
@@ -8426,10 +8446,11 @@
         "cardano-node": "cardano-node",
         "flake-utils": "flake-utils_19",
         "haskellNix": "haskellNix_19",
+        "iohkNix": "iohkNix_19",
         "nix": "nix_5",
         "nixpkgs": [
           "haskellNix",
-          "nixpkgs-2111"
+          "nixpkgs-unstable"
         ]
       }
     },
