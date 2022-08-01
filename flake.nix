@@ -51,17 +51,7 @@
         flake = project.flake {};
         packages = collectExes flake.packages;
 
-        devShell = pkgs.mkShell {
-          CARDANO_NODE_SRC = "${inputs.cardano-node.sourceInfo}";
-
-          nativeBuildInputs = [
-            pkgs.lsof
-            pkgs.tree
-            pkgs.jq
-            inputs.cardano-node.packages."${system}".cardano-cli
-            inputs.cardano-node.packages."${system}".cardano-node
-          ];
-        };
+        devShell = project.shell;
       }) //
     {
       nixosConfigurations =

@@ -4,6 +4,24 @@ with-compiler: ghc-8.10.7
 packages:
   ./plutus/common
   ./plutus/always-succeed
+  ./plutus/stake-script
+
+source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/cardano-wallet
+  tag: f6d4db733c4e47ee11683c343b440552f59beff7
+  --sha256: 0gb3zyv3q5v5sd8r29s02yc0brwq5a01is9c0n528391n2r8g1yy
+  subdir:
+    lib/cli
+    lib/core
+    lib/core-integration
+    lib/dbvar
+    lib/launcher
+    lib/numeric
+    lib/shelley
+    lib/strict-non-empty-containers
+    lib/test-utils
+    lib/text-class
 
 source-repository-package
   type: git
@@ -151,6 +169,16 @@ source-repository-package
     ouroboros-network
     ouroboros-network-framework
     ouroboros-network-testing
+    ntp-client
+
+source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/cardano-addresses
+  tag: 71006f9eb956b0004022e80aadd4ad50d837b621
+  --sha256: 11dl3fmq7ry5wdmz8kw07ji8yvrxnrsf7pgilw5q9mi4aqyvnaqk
+  subdir:
+    command-line
+    core
 
 source-repository-package
   type: git
@@ -188,6 +216,31 @@ source-repository-package
 
 source-repository-package
   type: git
+  location: https://github.com/input-output-hk/plutus-apps
+  tag: 4cc6c84c998af9ef543c2adc36f73be5a2bca4aa
+  --sha256: 1pcxv8l4rgwi0sa3ygq1ag1hyxj61rh03ij5mws78hax09p16vl4
+  subdir:
+    doc
+    freer-extras
+    playground-common
+    plutus-chain-index
+    plutus-chain-index-core
+    plutus-contract
+    plutus-example
+    plutus-contract-certification
+    plutus-ledger
+    plutus-ledger-constraints
+    -- plutus-pab
+    -- plutus-pab-executables
+    plutus-playground-server
+    plutus-script-utils
+    plutus-tx-constraints
+    plutus-use-cases
+    plutus-streaming
+    web-ghc
+
+source-repository-package
+  type: git
   location: https://github.com/input-output-hk/ekg-forward
   tag: 297cd9db5074339a2fb2e5ae7d0780debb670c63
   --sha256: 1zcwry3y5rmd9lgxy89wsb3k4kpffqji35dc7ghzbz603y1gy24g
@@ -204,6 +257,18 @@ source-repository-package
   location: https://github.com/input-output-hk/flat
   tag: ee59880f47ab835dbd73bea0847dab7869fc20d8
   --sha256: 1lrzknw765pz2j97nvv9ip3l1mcpf2zr4n56hwlz0rk7wq7ls4cm
+
+source-repository-package
+  type: git
+  location: https://github.com/raduom/hysterical-screams
+  tag: 4c523469e9efd3f0d10d17da3304923b7b0e0674
+  --sha256: 0w118v4vffrsjxfmwfv8qcn2qxmxpd1gxwcjnda91qz09jnpg0vp
+
+source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/quickcheck-dynamic
+  tag: c272906361471d684440f76c297e29ab760f6a1e
+  --sha256: 1b9ppgavqad78a2z1zxv7v4jasjz6zz0mxkr0zx0bbcd0i00jajf
 
 constraints:
     hedgehog >= 1.0
