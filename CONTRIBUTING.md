@@ -20,3 +20,5 @@ state from previous builds is interfering with your current build:
 ```
 rm nixos.qcow2; ./result/bin/run-nixos-vm
 ```
+
+Before running any scripts, it's important to wait for the BFT nodes to finish starting up (check for the existence of `/var/lib/cardano-node/state/node-bft1/node.sock`.
