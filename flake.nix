@@ -51,7 +51,7 @@
         flake = project.flake {};
         packages = collectExes flake.packages;
 
-        devShell = project.shell;
+        devShell = (project.appendModule { deferPluginErrors = true; }).shell;
       }) //
     {
       nixosConfigurations =

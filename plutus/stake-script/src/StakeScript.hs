@@ -56,12 +56,12 @@ typedValidator = Scripts.mkTypedValidator @Typed
   $$(PlutusTx.compile [|| mkValidator ||])
   $$(PlutusTx.compile [|| wrap ||])
   where
-    wrap = Scripts.wrapValidator @() @Integer
+    wrap = Scripts.mkUntypedValidator @() @Integer
 
 validator :: Plutus.Validator
 validator = Scripts.validatorScript typedValidator
 
-valHash :: Ledger.ValidatorHash
+valHash :: Plutus.ValidatorHash
 valHash = Scripts.validatorHash typedValidator
 
 script :: Plutus.Script

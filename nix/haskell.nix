@@ -6,6 +6,15 @@ haskell-nix:
 # This creates the Haskell package set.
 # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
 haskell-nix.cabalProject [
+  ({ lib, ... }: {
+    options = {
+      deferPluginErrors = lib.mkOption {
+        type = lib.types.bool;
+        description = "Whether to set the `defer-plugin-errors` flag on those packages that need it. If set to true, we will also build the haddocks for those packages.";
+        default = false;
+      };
+    };
+  })
   ({ pkgs, lib, config, buildProject, ...}:
     let
       inherit (haskell-nix) haskellLib;
@@ -59,6 +68,34 @@ haskell-nix.cabalProject [
         };
 
         modules = [
+          ({ pkgs, ... }: {
+            packages = {
+              plutus-contract.doHaddock = config.deferPluginErrors;
+              plutus-contract.flags.defer-plugin-errors = config.deferPluginErrors;
+
+              plutus-use-cases.doHaddock = config.deferPluginErrors;
+              plutus-use-cases.flags.defer-plugin-errors = config.deferPluginErrors;
+
+              plutus-ledger.doHaddock = config.deferPluginErrors;
+              plutus-ledger.flags.defer-plugin-errors = config.deferPluginErrors;
+
+              plutus-script-utils.doHaddock = config.deferPluginErrors;
+              plutus-script-utils.flags.defer-plugin-errors = config.deferPluginErrors;
+
+              plutus-example.doHaddock = config.deferPluginErrors;
+              plutus-example.flags.defer-plugin-errors = config.deferPluginErrors;
+
+              # FIXME: Haddock mysteriously gives a spurious missing-home-modules warning
+              plutus-tx-plugin.doHaddock = false;
+
+              # Relies on cabal-doctest, just turn it off in the Nix build
+              prettyprinter-configurable.components.tests.prettyprinter-configurable-doctest.buildable = lib.mkForce false;
+
+              plutus-pab-executables.components.tests.plutus-pab-test-full-long-running = {
+                platforms = lib.platforms.linux;
+              };
+            };
+          })
           ({ pkgs, ... }: {
             packages.tx-generator.package.buildable = with pkgs.stdenv.hostPlatform; isUnix && !isMusl;
             packages.cardano-tracer.package.buildable = with pkgs.stdenv.hostPlatform; isUnix && !isMusl;

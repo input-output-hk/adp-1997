@@ -10,7 +10,7 @@ import qualified Plutus.V1.Ledger.Api as Plutus
 
 import qualified Data.ByteString.Short as SBS
 
-import           StakeScript (stakeScriptsScriptShortBs, stakeScriptsScript)
+import           StakeScript (stakeScriptScriptShortBs, stakeScriptScript)
 
 main :: IO ()
 main = do
