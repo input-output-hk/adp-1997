@@ -15,19 +15,18 @@ let
   mkFilesScript = "${cardanoNodeSrc}/scripts/byron-to-alonzo/mkfiles.sh";
 
   mkFilesSh = workingDir: pkgs.runCommandLocal "mkFiles" {
-    buildInputs = [ pkgs.makeWrapper ];
+    buildInputs = [ pkgs.makeWrapper pkgs.jq ];
   } ''
     mkdir -p $out/bin
 
     cp ${mkFilesScript} $out/bin/mkfiles-wrapped.sh
+    patch $out/bin/mkfiles-wrapped.sh < ${./mkfiles.patch}
     substituteInPlace $out/bin/mkfiles-wrapped.sh \
-      --replace 'ROOT=example' 'ROOT=${workingDir}/state' \
-      --replace '../configuration' '${cardanoNodeSrc}/configuration' \
-      --replace 'echo "EnableLogMetrics: False" >> ''${ROOT}/configuration.yaml' \
-                'chmod +w ''${ROOT}/configuration.yaml; echo "EnableLogMetrics: False" >> ''${ROOT}/configuration.yaml'
+      --subst-var-by CARDANO_NODE_SRC "${cardanoNodeSrc}" \
+      --subst-var-by WORKING_DIR "${workingDir}"
 
     makeWrapper $out/bin/mkfiles-wrapped.sh $out/bin/mkfiles.sh \
-      --prefix PATH : "${lib.makeBinPath [ pkgs.bash cardanoNodePkgs.cardano-node cardanoNodePkgs.cardano-cli ]}"
+      --prefix PATH : "${lib.makeBinPath [ pkgs.bash cardanoNodePkgs.cardano-node cardanoNodePkgs.cardano-cli pkgs.jq ]}"
   '';
 
   registerAllScript = pkgs.writeShellScriptBin "register-all" ''

@@ -1,0 +1,37 @@
+--- /nix/store/3lnkjwmqhyalbz8miv1ldsqm27k303pk-source/scripts/byron-to-alonzo/mkfiles.sh	1970-01-01 08:00:01.000000000 +0800
++++ ./mkfiles.sh	2022-08-04 16:57:17.769090670 +0800
+@@ -40,7 +40,7 @@
+ #    if you want to start a node in Shelley, Allegra or Mary from epoch 0, supply the script
+ #    with a shelley, allegra or mary string argument. E.g mkfiles.sh mary.
+ 
+-ROOT=example
++ROOT=@WORKING_DIR@/state
+ 
+ BFT_NODES="node-bft1 node-bft2"
+ BFT_NODES_N="1 2"
+@@ -311,7 +311,7 @@
+ 
+ # Copy the QA testnet alonzo genesis which is equivalent to the mainnet
+ 
+-cp ../configuration/cardano/shelley_qa-alonzo-genesis.json shelley/genesis.alonzo.spec.json
++cp @CARDANO_NODE_SRC@/configuration/cardano/shelley_qa-alonzo-genesis.json shelley/genesis.alonzo.spec.json
+ 
+ cardano-cli genesis create --testnet-magic ${NETWORK_MAGIC} --genesis-dir shelley
+ 
+@@ -328,7 +328,7 @@
+     -e 's/"minFeeB": 0/"minFeeB": 155381/' \
+     -e 's/"minUTxOValue": 0/"minUTxOValue": 1000000/' \
+     -e 's/"decentralisationParam": 1.0/"decentralisationParam": 0.7/' \
+-    -e 's/"major": 0/"major": 2/' \
++    -e 's/"major": 0/"major": 5/' \
+     -e 's/"rho": 0.0/"rho": 0.1/' \
+     -e 's/"tau": 0.0/"tau": 0.1/' \
+     -e 's/"updateQuorum": 5/"updateQuorum": 2/'
+@@ -654,6 +654,7 @@
+ echo ""
+ 
+ # These are needed for cardano-submit-api
++chmod +w "${ROOT}/configuration.yaml"
+ echo "EnableLogMetrics: False" >> ${ROOT}/configuration.yaml
+ echo "EnableLogging: True" >> ${ROOT}/configuration.yaml
+ 

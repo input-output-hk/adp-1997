@@ -2,7 +2,7 @@
 
 let
   cardanoNodePackages = inputs.cardano-node.packages."${pkgs.system}";
-  plutusProgs = inputs.self.packages."${pkgs.system}".always-succeed;
+  plutusProgs = inputs.self.packages."${pkgs.system}";
 in
 {
   imports = [
@@ -21,7 +21,8 @@ in
     pkgs.tree
     pkgs.jq
     (pkgs.writeShellScriptBin "start-cluster" (builtins.readFile ../../script.sh))
-    plutusProgs
+    plutusProgs.always-succeed
+    plutusProgs.stake-script
     (pkgs.writeShellScriptBin "run-plutus-always-succeeds" ''
     set -euo pipefail
 
@@ -168,6 +169,139 @@ in
       echo ""
       cardano-cli query utxo --address $(cat payment2.addr) --testnet-magic 42
     '')
+    (pkgs.writeShellScriptBin "run-plutus-staking" ''
+    set -euo pipefail
+
+    # Link our key with all the funds
+    ln -sf /var/lib/cardano-node/state/addresses/user1.skey ./payment1.skey
+    ln -sf /var/lib/cardano-node/state/addresses/user1.vkey ./payment1.vkey
+    ln -sf /var/lib/cardano-node/state/addresses/user1.addr ./payment1.addr
+
+    echo ""
+    echo "Compiling Plutus script ..."
+    echo ""
+    stake-script
+
+    echo ""
+    echo "Building a payment address from the plutus script and the hash of a verification key ..."
+    echo ""
+    PAYMENT_ADDR=$(cardano-cli address build \
+      --stake-script-file ./result.plutus \
+      --payment-verification-key-file payment1.vkey \
+      --testnet-magic 42)
+
+    echo ""
+    echo "Building a stake address from the plutus script ..."
+    echo ""
+    STAKE_ADDR=$(cardano-cli stake-address build \
+      --stake-script-file ./result.plutus \
+      --testnet-magic 42)
+
+    echo ""
+    echo "Stake address info before registration (should be nothing) ..."
+    echo ""
+    cardano-cli query stake-address-info --address $STAKE_ADDR \
+      --testnet-magic 42
+
+    sleep 5
+
+    TX_IN=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $1 }')
+    TX_IX=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $2 }')
+    UTXO="$TX_IN#$TX_IX"
+
+    # Register stake address on chain
+    cardano-cli stake-address registration-certificate \
+      --stake-script-file ./result.plutus \
+      --out-file stake-reg.cert
+
+    cardano-cli transaction build \
+      --testnet-magic 42 \
+      --change-address $(cat payment1.addr) \
+      --tx-in $UTXO \
+      --tx-out "$PAYMENT_ADDR+5000000" \
+      --witness-override 3 \
+      --certificate-file stake-reg.cert \
+      --out-file reg.body
+
+    cardano-cli transaction sign \
+      --testnet-magic 42 \
+      --tx-body-file reg.body \
+      --signing-key-file ./payment1.skey \
+      --out-file reg.tx
+
+    cardano-cli transaction submit --tx-file reg.tx --testnet-magic 42
+    sleep 5
+
+    echo ""
+    echo "Stake address info after registration ..."
+    echo ""
+    cardano-cli query stake-address-info --address $STAKE_ADDR \
+      --testnet-magic 42
+
+    STAKE_POOL_ID=$(cardano-cli query stake-pools --testnet-magic 42)
+
+    # Delegate stake to stake pool
+    cardano-cli stake-address delegation-certificate \
+      --stake-script-file ./result.plutus \
+      --stake-pool-id "''${STAKE_POOL_ID}" \
+      --out-file deleg.cert
+
+    # Submit delegation
+    cardano-cli query protocol-parameters \
+      --testnet-magic 42 \
+      --out-file pparams.json
+
+    TX_IN=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $1 }')
+    TX_IX=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $2 }')
+    UTXO="''${TX_IN}#''${TX_IX}"
+
+    COLLATERAL_TX_IN=$(cardano-cli query utxo --address $PAYMENT_ADDR --testnet-magic 42 | tail -n1 | awk '{ print $1 }')
+    COLLATERAL_TX_IX=$(cardano-cli query utxo --address $PAYMENT_ADDR --testnet-magic 42 | tail -n1 | awk '{ print $2 }')
+    COLLATERAL_UTXO="$COLLATERAL_TX_IN#$COLLATERAL_TX_IX"
+
+    cardano-cli transaction build \
+      --alonzo-era \
+      --testnet-magic 42 \
+      --change-address "$(cat payment1.addr)" \
+      --tx-in "''${UTXO}" \
+      --tx-in-collateral "''${COLLATERAL_UTXO}" \
+      --tx-out "''${PAYMENT_ADDR}+1000000" \
+      --witness-override 3 \
+      --certificate-file ./deleg.cert \
+      --certificate-script-file ./result.plutus \
+      --certificate-redeemer-value 42 \
+      --protocol-params-file ./pparams.json \
+      --out-file delegate.body
+
+    # cardano-cli transaction sign \
+    #   --signing-key-file payment1.skey \
+    #   --testnet-magic 42 \
+    #   --tx-body-file ./tx.body \
+    #   --out-file ./tx.tx
+
+    # cardano-cli transaction submit --testnet-magic 42 --tx-file tx.tx
+
+    # # Query for rewards
+    # cardano-cli query stake-address-info \
+    # --testnet-magic 42 \
+    # --address "''${STAKE_ADDR}"
+
+    # # Collect rewards for address
+    # cardano-cli transaction build \
+    #   --tx-in "''${UTXO_IN}" \
+    #   --tx-out "''${PAYMENT_ADDR}+0" \
+    #   --withdrawal "''${STAKE_ADDR}+0" \
+    #   --out-file ./rewards.body
+
+    # cardano-cli transaction sign \
+    #   --signing-key-file payment1.skey \
+    #   --testnet-magic 42 \
+    #   --tx-body-file ./rewards.body \
+    #   --out-file ./rewards.tx
+
+    # cardano-cli transaction submit --testnet-magic 42 --tx-file rewards.tx
+    ''
+    )
   ];
 
   environment.interactiveShellInit = ''
