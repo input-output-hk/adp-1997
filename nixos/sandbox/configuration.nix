@@ -170,7 +170,7 @@ in
       cardano-cli query utxo --address $(cat payment2.addr) --testnet-magic 42
     '')
     (pkgs.writeShellScriptBin "run-plutus-staking" ''
-    set -euo pipefail
+    set -euxo pipefail
 
     # Link our key with all the funds
     ln -sf /var/lib/cardano-node/state/addresses/user1.skey ./payment1.skey
@@ -282,27 +282,53 @@ in
     cardano-cli transaction submit --testnet-magic 42 --tx-file delegate.tx
 
     # Wait for rewards
-    sleep ?
+    sleep 360
 
     # Query for rewards
     cardano-cli query stake-address-info \
     --testnet-magic 42 \
     --address "''${STAKE_ADDR}"
 
-    # # Collect rewards for address
-    # cardano-cli transaction build \
-    #   --tx-in "''${UTXO_IN}" \
-    #   --tx-out "''${PAYMENT_ADDR}+0" \
-    #   --withdrawal "''${STAKE_ADDR}+0" \
-    #   --out-file ./rewards.body
+    COLLATERAL_TX_IN=$(cardano-cli query utxo --address $PAYMENT_ADDR --testnet-magic 42 | tail -n2 | head -n1 | awk '{ print $1 }')
+    COLLATERAL_TX_IX=$(cardano-cli query utxo --address $PAYMENT_ADDR --testnet-magic 42 | tail -n2 | head -n1 | awk '{ print $2 }')
+    COLLATERAL_UTXO="$COLLATERAL_TX_IN#$COLLATERAL_TX_IX"
 
-    # cardano-cli transaction sign \
-    #   --signing-key-file payment1.skey \
-    #   --testnet-magic 42 \
-    #   --tx-body-file ./rewards.body \
-    #   --out-file ./rewards.tx
+    TX_IN=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $1 }')
+    TX_IX=$(cardano-cli query utxo --address $(cat payment1.addr) --testnet-magic 42 | tail -n1 | awk '{ print $2 }')
+    UTXO="$TX_IN#$TX_IX"
 
-    # cardano-cli transaction submit --testnet-magic 42 --tx-file rewards.tx
+    TOTAL_REWARDS=$(cardano-cli query stake-address-info \
+      --testnet-magic 42 \
+      --address "''${STAKE_ADDR}" | jq 'map (.rewardAccountBalance) | add')
+    MIN_UTXO=1000000
+
+    # Collect rewards for address
+    cardano-cli transaction build \
+      --alonzo-era \
+      --testnet-magic 42 \
+      --change-address $(cat payment1.addr) \
+      --tx-in $UTXO \
+      --tx-in-collateral $COLLATERAL_UTXO \
+      --tx-out "$PAYMENT_ADDR+$(expr $TOTAL_REWARDS + $MIN_UTXO)" \
+      --withdrawal "$STAKE_ADDR+$TOTAL_REWARDS" \
+      --withdrawal-script-file ./result.plutus \
+      --withdrawal-redeemer-value 42 \
+      --protocol-params-file ./pparams.json \
+      --out-file staking-script-withdrawal.txbody
+
+    cardano-cli transaction sign \
+      --signing-key-file payment1.skey \
+      --testnet-magic 42 \
+      --tx-body-file staking-script-withdrawal.txbody \
+      --out-file staking-script-withdrawal.tx
+
+    cardano-cli transaction submit --testnet-magic 42 --tx-file staking-script-withdrawal.tx
+
+    sleep 5
+
+    cardano-cli query utxo \
+    --testnet-magic 42 \
+    --address "''${PAYMENT_ADDR}"
     ''
     )
   ];
