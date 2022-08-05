@@ -273,18 +273,21 @@ in
       --protocol-params-file ./pparams.json \
       --out-file delegate.body
 
-    # cardano-cli transaction sign \
-    #   --signing-key-file payment1.skey \
-    #   --testnet-magic 42 \
-    #   --tx-body-file ./tx.body \
-    #   --out-file ./tx.tx
+    cardano-cli transaction sign \
+      --signing-key-file payment1.skey \
+      --testnet-magic 42 \
+      --tx-body-file delegate.body \
+      --out-file delegate.tx
 
-    # cardano-cli transaction submit --testnet-magic 42 --tx-file tx.tx
+    cardano-cli transaction submit --testnet-magic 42 --tx-file delegate.tx
 
-    # # Query for rewards
-    # cardano-cli query stake-address-info \
-    # --testnet-magic 42 \
-    # --address "''${STAKE_ADDR}"
+    # Wait for rewards
+    sleep ?
+
+    # Query for rewards
+    cardano-cli query stake-address-info \
+    --testnet-magic 42 \
+    --address "''${STAKE_ADDR}"
 
     # # Collect rewards for address
     # cardano-cli transaction build \
